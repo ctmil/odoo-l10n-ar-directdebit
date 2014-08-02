@@ -3,7 +3,7 @@
     'name': 'Direct Debit for Credicoop',
     'version': '0.1',
     'category': 'Sale',
-    'description': 'Direct Debit support for the Agentinian bank Banco Credicoop Cooperativo Limitado',
+    'description': 'Direct Debit support for the Agentinian Bank Banco Credicoop Cooperativo Limitado',
     'author': 'Moldeo Interactive',
     'website': 'http://biz.moldeo.coop/',
     'images':  [],
