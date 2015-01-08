@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Direct Debit for Credicoop',
+    'name': 'Direct Debit',
     'version': '0.1',
     'category': 'Sale',
-    'description': 'Direct Debit support for the Agentinian Bank Banco Credicoop Cooperativo Limitado',
+    'description': 'Direct Debit support for Agentinian Banks',
     'author': 'Moldeo Interactive',
     'website': 'http://biz.moldeo.coop/',
     'images':  [],
@@ -12,7 +12,11 @@
         'account',
     ],
     'demo':    [],
-    'data':    [],
+    'data':    [
+        'data/bank_view.xml',
+        'data/directdebit_view.xml',
+        'wizard/generate_communication_view.xml',
+    ],
     'test':    [
     ],
     'installable': True,

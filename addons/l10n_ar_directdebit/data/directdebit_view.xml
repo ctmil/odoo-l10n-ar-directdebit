@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record model="ir.ui.view" id="directdebit_communication_tree_view">
+            <field name="name">directdebit.communication.tree</field>
+            <field name="model">directdebit.communication</field>
+            <field name="arch" type="xml">
+                <tree string="Communication" version="7.0">
+                    <field name="name"/>
+                    <field name="company_id"/>
+                    <field name="open_date"/>
+                    <field name="partner_bank_id"/>
+                </tree>
+            </field>
+        </record>
+ 
+        <record model="ir.ui.view" id="directdebit_communication_form_view">
+            <field name="name">directdebit.communication.form</field>
+            <field name="model">directdebit.communication</field>
+            <field name="arch" type="xml">
+                <form string="Communication" version="7.0">
+                    <header>
+                        <button name="do_request" string="Request" type="object" states="draft" class="oe_highlight"/>
+                        <button name="do_pool"    string="Pool Answer" type="object" states="open" class="oe_highlight"/>
+                        <button name="do_cancel"  string="Cancel" type="object" states="draft,open"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet string="Communication">
+                        <h1><field name="name" placeholder="Communication name..."/></h1>
+                        <group>
+                            <field name="open_date"/>
+                            <field name="company_id"/>
+                            <field name="partner_bank_id"/>
+                            <field name="line_description"/>
+                        </group>
+                        <field name="line_ids">
+                            <tree editable="bottom">
+                                <field name="invoice_id" on_change="onchange_invoice_id(invoice_id)"/>
+                                <field name="partner_id" readonly="True"/>
+                                <field name="amount_total" readonly="True"/>
+                                <field name="partner_bank_id"/>
+                            </tree>
+                        </field>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_dd_communication" model="ir.actions.act_window">
+            <field name="name">Communications</field>
+            <field name="res_model">directdebit.communication</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <menuitem id="menu_directdebit" name="Direct Debit" parent="account.menu_finance"/>
+        <menuitem id="menu_dd_communication" name="Communications" parent="menu_directdebit"
+            action="action_dd_communication"/>
+        
+    </data>
+</openerp>
+<!--
+ vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
+ -->

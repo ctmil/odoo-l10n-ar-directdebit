@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+
+        <record id="action_directdebit_new_communication_form" model="ir.actions.act_window">
+            <field name="name">Generate Communication from Invoices</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="src_model">account.invoice</field>
+            <field name="res_model">directdebit.communication</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record model="ir.values" id="action_directdebit_create_communication">
+            <field name="model_id" ref="account.model_account_invoice" />
+            <field name="name">Generate Communication</field>
+            <field name="key2">client_action_multi</field>
+            <field name="value" eval="'ir.actions.act_window,' +str(ref('action_directdebit_new_communication_form'))" />
+            <field name="key">action</field>
+            <field name="model">account.invoice</field>
+        </record>
+   
+    </data>
+</openerp>
+<!--
+ vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
+ -->

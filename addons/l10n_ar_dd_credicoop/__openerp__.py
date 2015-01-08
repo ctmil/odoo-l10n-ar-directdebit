@@ -7,14 +7,10 @@
     'author': 'Moldeo Interactive',
     'website': 'http://biz.moldeo.coop/',
     'images':  [],
-    'depends': [
-        'base',
-        'account',
-    ],
+    'depends': [ 'l10n_ar_directdebit', ],
     'demo':    [],
-    'data':    [],
-    'test':    [
-    ],
+    'data':    [ 'data/directdebit_view.xml' ],
+    'test':    [ ],
     'installable': True,
 }
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
