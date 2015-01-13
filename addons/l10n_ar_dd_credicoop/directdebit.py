@@ -48,7 +48,7 @@ eb_communication_line_map = lambda l: {
     'operation_code': 51,
     'date_due': datetime.strptime(l.communication_id.debit_date or l.invoice_id.date_due, D_FORMAT).strftime("%y%m%d"),
     'directdebit_code': l.communication_id.partner_bank_id.directdebit_code,
-    'partner_id': "%022d" % l.partner_id.id,
+    'partner_id': "%5d" % l.partner_id.id,
     'currency_code': currency_code_map.get(l.invoice_id.currency_id.name, 'P'),
     'cbu': to_numeric(l.partner_bank_id.acc_number),
     'amount': int(l.invoice_id.amount_total * 100),
