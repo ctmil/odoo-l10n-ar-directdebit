@@ -9,6 +9,7 @@
                     <field name="name"/>
                     <field name="company_id"/>
                     <field name="open_date"/>
+                    <field name="debit_date"/>
                     <field name="partner_bank_id"/>
                 </tree>
             </field>
@@ -29,6 +30,7 @@
                         <h1><field name="name" placeholder="Communication name..."/></h1>
                         <group>
                             <field name="open_date"/>
+                            <field name="debit_date"/>
                             <field name="company_id"/>
                             <field name="partner_bank_id"/>
                             <field name="line_description"/>

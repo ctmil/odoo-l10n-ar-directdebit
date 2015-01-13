@@ -46,7 +46,7 @@ def to_numeric(value):
 eb_communication_line_map = lambda l: {
     'bank_code': to_numeric(l.partner_bank_id.bank.bcra_code if l.partner_bank_id.bank else 0),
     'operation_code': 51,
-    'date_due': datetime.strptime(l.invoice_id.date_due, D_FORMAT).strftime("%y%m%d"),
+    'date_due': datetime.strptime(l.communication_id.debit_date or l.invoice_id.date_due, D_FORMAT).strftime("%y%m%d"),
     'directdebit_code': l.communication_id.partner_bank_id.directdebit_code,
     'partner_id': "%022d" % l.partner_id.id,
     'currency_code': currency_code_map.get(l.invoice_id.currency_id.name, 'P'),

@@ -9,6 +9,8 @@
             <field name="arch" type="xml">
 		<field name="bank_bic" position="after">
 		    <field name="directdebit_code"/>
+		    <field name="directdebit_user"/>
+		    <field name="directdebit_password" password="1"/>
 		</field>
             </field>
         </record>

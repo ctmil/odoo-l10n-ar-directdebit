@@ -4,8 +4,8 @@ from osv import fields,osv
 from tools.translate import _
 from openerp import netsvc
 import time
-from datetime import datetime
-from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from datetime import datetime, timedelta
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT, DEFAULT_SERVER_DATE_FORMAT
 
 class directdebit_response(osv.osv):
     _name = 'directdebit.response'
@@ -65,7 +65,8 @@ class directdebit_line(osv.osv):
         'amount_total': fields.related('invoice_id', 'amount_total', type="float",
                                      string="Amount", readonly=True, store=False),
         'partner_bank_id': fields.many2one('res.partner.bank', 'Source Bank Account',
-                                           domain="[('partner_id','=',partner_id)]", context="{'default_partner_id': partner_id}"),
+                                           domain="[('partner_id','=',partner_id)]",
+                                           context="{'default_partner_id': partner_id}", required=True),
         'operation_code': fields.char('Operation code', size=2),
         'date_due': fields.date('Due date', size=6),
         'directdebit_company_code': fields.char('Bank Company Code', size=6),
@@ -87,9 +88,12 @@ class directdebit_communication(osv.osv):
         'name': fields.char('Name', required=True),
         'line_description': fields.char('Description', help="Description of all lines. If not set use the invoice name.", size=10),
         'open_date': fields.datetime('Open Date'),
+        'debit_date': fields.date('Debit date'),
         'company_id': fields.many2one('res.company', 'Company', required=True),
         'partner_bank_id': fields.many2one('res.partner.bank', 'Target Bank Account',
-                                           domain="[('company_id','=',company_id)]", context="{'default_company_id':company_id}"),
+                                           domain="[('company_id','=',company_id)]",
+                                           context="{'default_company_id':company_id}",
+                                          required=True),
         'line_ids': fields.one2many('directdebit.communication.line', 'communication_id', 'Lines', ondelete='cascade'),
         'state': fields.selection([('draft','Draft'),('open','Open'),('done','Done'),('cancel','Canceled')], string="State"),
         'traffic': fields.selection(
@@ -119,7 +123,8 @@ class directdebit_communication(osv.osv):
         return r
 
     _defaults = {
-        'open_date': lambda *a: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+        'open_date': lambda *a: datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+        'debit_date': lambda *a: (datetime.now() + timedelta(days=3)).strftime(DEFAULT_SERVER_DATETIME_FORMAT),
         'company_id': lambda self, cr, uid, *a: self.pool.get('res.users').browse(cr, uid, uid).company_id.id,
         'state': 'draft',
         'line_ids': _default_line_ids,
@@ -144,6 +149,10 @@ class directdebit_communication(osv.osv):
 
     def validate(self, cr, uid, ids, context=None):
         for com in self.browse(cr, uid, ids):
+            if not (datetime.strptime(com.debit_date,
+                                      DEFAULT_SERVER_DATE_FORMAT) -
+                    datetime.now()).days >= 2:
+                raise osv.except_osv(_("Error"), _("Debit date must be 3 days more than today."))
             if not com.partner_bank_id.bank.bcra_code:
                 raise osv.except_osv(_("Error"), _("Your Target Bank Account has not BCRA code assigned.\nCheck the <a href='http://www.bcra.gob.ar/sisfin/sf020101.asp?bco=AAA20&tipo=3'>value</a> and setup before continue."))
             if not com.partner_bank_id.directdebit_code:
