@@ -39,7 +39,7 @@
                             <tree editable="bottom">
                                 <field name="invoice_id" on_change="onchange_invoice_id(invoice_id)"/>
                                 <field name="partner_id" readonly="True"/>
-                                <field name="amount_total" readonly="True"/>
+                                <field name="amount_total" readonly="True" sum="Total Amount"/>
                                 <field name="partner_bank_id"/>
                             </tree>
                         </field>
