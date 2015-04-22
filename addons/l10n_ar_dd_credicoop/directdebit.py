@@ -40,6 +40,8 @@ currency_code_map = {
     'USD': 'D',
 }
 
+ignore_symbol_chars = '-/\\'
+
 def to_numeric(value):
     return int(value) if value and value.isnumeric() else 0
 
@@ -54,6 +56,8 @@ eb_communication_line_map = lambda l: {
     'amount': int(l.invoice_id.amount_total * 100),
     'cuit': to_numeric(l.communication_id.company_id.partner_id.document_number),
     'description': (l.communication_id.line_description or l.invoice_id.name or '').encode('ascii','replace')[:10],
+    'document_id': "%015i" % l.invoice_id.id,
+#    'document_id': "%015i" % l.invoice_id.id,
     'document_id': l.invoice_id.number or 'ERROR',
     'response_code': '',
 }
@@ -70,9 +74,26 @@ class directdebit_communication(osv.osv):
         #import pdb; pdb.set_trace()
         return {}
 
-    def _set_credicoop_input(self, cr, uid, ids, field_name, field_value, arg, context=None):
-        #import pdb; pdb.set_trace()
-        return {}
+    def _set_credicoop_input(self, cr, uid, ids,
+                             field_name, field_value, arg, context=None):
+        dd_line_obj = self.pool.get('directdebit.communication.line')
+        dd_input = field_value.decode('base64')
+        if dd_input:
+            dd_input = dd_input.split('\n')
+            for line in dd_input:
+                ml = re_be_communication_line.match(line)
+                if ml:
+                    data = ml.groupdict()
+                    par_id = int(data['partner_id'])
+                    amount = float(data['amount'])
+                    dd_line_ids = dd_line_obj.search(cr, uid, [
+                        ('id', '=', ids),
+                        ('partner_id', '=', par_id),
+                        ('amount', '=', amount)])
+                    if len(dd_line_ids) == 1:
+                        dd_line_obj.write(
+                            cr, uid, dd_line_ids,
+                            {'response_code': data['response_code']})
 
     _columns = {
         'credicoop_output': fields.function(_get_credicoop_output, type="binary", mode="model", string="File to send to credicoop", readonly="True", store=False),
