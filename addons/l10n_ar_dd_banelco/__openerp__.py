@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Direct Debit for Credicoop',
+    'name': 'Direct Debit for Banelco',
     'version': '0.1',
     'category': 'Sale',
-    'description': 'Direct Debit support for the Agentinian Bank Banco Credicoop Cooperativo Limitado',
+    'description': 'Direct Debit support for the Agentinian Banelco',
     'author': 'Moldeo Interactive',
     'website': 'http://biz.moldeo.coop/',
     'images':  [],

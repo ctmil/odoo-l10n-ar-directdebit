@@ -3,13 +3,13 @@
     <data>
 
         <record model="ir.ui.view" id="directdebit_communication_form_view">
-            <field name="name">dd_credicoop.communication.form</field>
+            <field name="name">dd_banelco.communication.form</field>
             <field name="model">directdebit.communication</field>
 	    <field name="inherit_id" ref="l10n_ar_directdebit.directdebit_communication_form_view"/>
             <field name="arch" type="xml">
 		<field name="partner_bank_id" position="after">
-		    <field name="credicoop_output" attrs="{'invisible': [['state','!=','open']]}"/>
-		    <field name="credicoop_input"  attrs="{'invisible': [['state','!=','open']]}"/>
+		    <field name="banelco_output" attrs="{'invisible': [['state','!=','open']]}"/>
+		    <field name="banelco_input"  attrs="{'invisible': [['state','!=','open']]}"/>
 		</field>
             </field>
         </record>
