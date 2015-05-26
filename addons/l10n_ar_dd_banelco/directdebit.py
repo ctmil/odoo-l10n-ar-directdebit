@@ -9,6 +9,10 @@ import csv
 import re
 from StringIO import StringIO
 import string
+try:
+    import simplejson as json
+except:
+    import json
 
 def to_numeric(value):
     return int(value) if value and value.isnumeric() else 0
@@ -19,7 +23,17 @@ class directdebit_communication(osv.osv):
     _inherit = 'directdebit.communication'
 
     def _valid_alphanumeric(self, text):
-        text = text.upper().encode('ascii','replace')
+
+        # Replace "dangerous" characters
+        replacements = {138: 's', 140: 'O', 142: 'z', 154: 's', 156: 'o', 158: 'z', 159: 'Y', 192: 'A', 193: 'A', 194: 'A', 195: 'a', 196: 'A', 197: 'Aa', 198: 'E', 199: 'C', 200: 'E', 201: 'E', 202: 'E', 203: 'E', 204: 'I', 205: 'I', 206: 'I', 207: 'I', 208: 'Th', 209: 'N', 210: 'O', 211: 'O', 212: 'O', 213: 'O', 214: 'O', 215: 'x', 216: 'O', 217: 'U', 218: 'U', 219: 'U', 220: 'U', 222: 'th', 221: 'Y', 223: 's', 224: 'a', 225: 'a', 226: 'a', 227: 'a', 228: 'ae', 229: 'aa', 230: 'ae', 231: 'c', 232: 'e', 233: 'e', 234: 'e', 235: 'e', 236: 'i', 237: 'i', 238: 'i', 239: 'i', 240: 'th', 241: 'n', 242: 'o', 243: 'o', 244: 'o', 245: 'o', 246: 'oe', 248: 'oe', 249: 'u', 250: 'u', 251: 'u', 252: 'u', 253: 'y', 254: 'Th', 255: 'y'}
+        text = text.decode('utf-8')
+        for k in replacements:
+            text = text.replace(unichr(k), replacements[k])
+
+        # Uppercase
+        text = text.upper()
+
+        # Allow unly "safe" characters
         valid = string.ascii_uppercase + string.digits + ' ()*.:;/-'
         for char in text:
             if not char in valid:
