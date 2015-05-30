@@ -26,6 +26,7 @@ class directdebit_communication(osv.osv):
 
         # Replace "dangerous" characters
         replacements = {138: 's', 140: 'O', 142: 'z', 154: 's', 156: 'o', 158: 'z', 159: 'Y', 192: 'A', 193: 'A', 194: 'A', 195: 'a', 196: 'A', 197: 'Aa', 198: 'E', 199: 'C', 200: 'E', 201: 'E', 202: 'E', 203: 'E', 204: 'I', 205: 'I', 206: 'I', 207: 'I', 208: 'Th', 209: 'N', 210: 'O', 211: 'O', 212: 'O', 213: 'O', 214: 'O', 215: 'x', 216: 'O', 217: 'U', 218: 'U', 219: 'U', 220: 'U', 222: 'th', 221: 'Y', 223: 's', 224: 'a', 225: 'a', 226: 'a', 227: 'a', 228: 'ae', 229: 'aa', 230: 'ae', 231: 'c', 232: 'e', 233: 'e', 234: 'e', 235: 'e', 236: 'i', 237: 'i', 238: 'i', 239: 'i', 240: 'th', 241: 'n', 242: 'o', 243: 'o', 244: 'o', 245: 'o', 246: 'oe', 248: 'oe', 249: 'u', 250: 'u', 251: 'u', 252: 'u', 253: 'y', 254: 'Th', 255: 'y'}
+
         text = text.decode('utf-8')
         for k in replacements:
             text = text.replace(unichr(k), replacements[k])
@@ -43,6 +44,10 @@ class directdebit_communication(osv.osv):
     def _get_banelco_output(self, cr, uid, ids, fields, args, context=None):
         r = self.generate_output(cr, uid, ids, context=context)
         return r
+
+    def _get_banelco_output_filename(self, cr, ids, fields, args, context=None):
+        now = datetime.now()
+        return "FAC9999%s.csv" % (now.strftime('%m%d%Y'))
 
     def _get_banelco_input(self, cr, uid, ids, fields, args, context=None):
         return {}
@@ -71,15 +76,18 @@ class directdebit_communication(osv.osv):
 
     _columns = {
         'banelco_output': fields.function(_get_banelco_output, type="binary", mode="model", string="File to send to Banelco", readonly="True", store=False),
+    'banelco_output_filename': fields.function(_get_banelco_output_filename, type="char", mode="model", string="Filename to Banelco",  store=False),
         'banelco_input': fields.function(_get_banelco_input, fnct_inv = _set_banelco_input, type="binary", mode="model", string="File from Banelco", store=False),
     }
 
     def generate_output(self, cr, uid, ids, context=None):
         r = {}
+        pt_obj = self.pool.get('account.payment.term')
         for com in self.browse(cr, uid, ids):
             if com.state == 'draft':
                 r[com.id] = None
                 continue
+
             out = StringIO()
             writer = csv.writer(out, dialect='excel')
             for l in com.line_ids:
@@ -88,25 +96,58 @@ class directdebit_communication(osv.osv):
                 ol.append(ref_number)
                 bill_id = l.invoice_id.id
                 ol.append(bill_id)
-                # First due
-                date_due_1 = datetime.strptime(l.communication_id.debit_date or l.invoice_id.date_due, D_FORMAT).strftime("%d%m%Y")
-                amount_1_int = int(l.invoice_id.amount_total)
-                amount_1_dec = int((l.invoice_id.amount_total - amount_1_int)*100)
-                amount_1 = "%s,%s" % (amount_1_int, amount_1_dec)
-                ol.append(date_due_1)
-                ol.append(amount_1)
 
-                # Second due
-                date_due_2 = ""
-                amount_2 = ""
-                ol.append(date_due_2)
-                ol.append(amount_2)
+                # Calculate due dates:
+                # If invoice has a date, calculate dues an amounts based on payment term
+                if l.invoice_id.date_invoice:
+                    ref_date = l.invoice_id.date_invoice
+                    payment_term_id = l.invoice_id.payment_term.id
+                    if payment_term_id:
+                        pterm_list = pt_obj.compute(cr, uid, payment_term_id, value=1, date_ref=ref_date)
+                        if pterm_list:
+                            pterm_list.sort()
+                            dues_amounts = []
+                            for pterm in pterm_list[:3]:
+                                date = pterm[0] # YYYY-MM-DD
+                                year = date[:4]
+                                month = date[5:7]
+                                day = date[-2:]
+                                
+                                dues_amounts.append(('%s%s%s'%(day,month,year), pterm[-1]))
 
-                # Third due
-                date_due_3 = ""
-                amount_3 = ""
-                ol.append(date_due_3)
-                ol.append(amount_3)
+                    else:
+                        # No payment term
+                        date = datetime.strptime(ref_date, D_FORMAT).strftime("%d%m%Y")
+                        dues_amounts = [(date, l.invoice_id.amount_total), None, None]
+
+#                elif l.invoice_id.date_due:
+#                    # If invoice has no date, but a due date, set a single amount and due date
+#                    ref_date = l.invoice_id.date_due
+#                    date = datetime.strptime(ref_date, D_FORMAT).strftime("%d%m%Y")
+#                    dues_amounts = [(date, l.invoice_id.amount_total), None, None]
+#                elif l.communication_id.debit_date:
+#                    ref_date = l.communication_id.debit_date
+#                    # If invoice has neither date nor due date, set a single amount and due date based
+#                    # on communication debit_date
+#                    date = datetime.strptime(ref_date, D_FORMAT).strftime("%d%m%Y")
+#                    dues_amounts = [(date, l.invoice_id.amount_total), None, None]
+#                else:
+#                    # No reference date, skip it
+#                    continue
+
+                # Get first 3 due dates and amounts
+                for da in dues_amounts[:3]:
+                    date_due = ""
+                    amount = ""
+                    if not da is None:
+                        date_due = da[0]
+                        amount = da[1]
+                        amount_int = int(amount)
+                        amount_dec = int((amount - amount_int)*100)
+                        amount = "%s,%s" % (amount_int, amount_dec)
+                    ol.append(date_due)
+                    ol.append(amount)
+
 
                 prev_ref = ""
                 ol.append(prev_ref)
