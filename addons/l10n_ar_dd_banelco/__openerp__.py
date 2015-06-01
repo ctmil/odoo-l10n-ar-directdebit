@@ -9,7 +9,8 @@
     'images':  [],
     'depends': [ 'l10n_ar_directdebit', ],
     'demo':    [],
-    'data':    [ 'data/directdebit_view.xml' ],
+    'data':    [ 'data/directdebit_view.xml',
+                 'data/banelco_menuitem.xml', ],
     'test':    [ ],
     'installable': True,
 }

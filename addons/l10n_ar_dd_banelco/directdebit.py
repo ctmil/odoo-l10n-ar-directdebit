@@ -45,9 +45,16 @@ class directdebit_communication(osv.osv):
         r = self.generate_output(cr, uid, ids, context=context)
         return r
 
-    def _get_banelco_output_filename(self, cr, ids, fields, args, context=None):
+    def _get_banelco_output_filename(self, cr, uid, ids, fields, args, context=None):
+        import pdb; pdb.set_trace()
+        r = {}
         now = datetime.now()
-        return "FAC9999%s.csv" % (now.strftime('%m%d%Y'))
+        icp = self.pool.get('ir.config_parameter')
+        banelco_company_id = icp.get_param(cr, uid, 'banelco_company_id', '')
+        for com in self.browse(cr, uid, ids):
+            r[com.id] = "FAC%s%s.csv" % (banelco_company_id, now.strftime('%m%d%Y'))
+
+        return r
 
     def _get_banelco_input(self, cr, uid, ids, fields, args, context=None):
         return {}
@@ -76,7 +83,7 @@ class directdebit_communication(osv.osv):
 
     _columns = {
         'banelco_output': fields.function(_get_banelco_output, type="binary", mode="model", string="File to send to Banelco", readonly="True", store=False),
-    'banelco_output_filename': fields.function(_get_banelco_output_filename, type="char", mode="model", string="Filename to Banelco",  store=False),
+        'banelco_output_filename': fields.function(_get_banelco_output_filename, type="char", mode="model", string="Filename to Banelco", store=False),
         'banelco_input': fields.function(_get_banelco_input, fnct_inv = _set_banelco_input, type="binary", mode="model", string="File from Banelco", store=False),
     }
 

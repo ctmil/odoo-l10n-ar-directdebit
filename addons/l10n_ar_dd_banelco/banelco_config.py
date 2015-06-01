@@ -20,40 +20,41 @@
 ##############################################################################
 
 import openerp
-from openerp import SUPERUSER_ID
-from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as DF
 from openerp.tools.translate import _
 from openerp.osv import fields, osv
 
 class banelco_config_settings(osv.osv_memory):
-    _name = 'banelco.directdebit.communication'
+    _name = 'banelco.config.settings'
     _inherit = 'res.config.settings'
 
     _columns = {
         'banelco_company_id': fields.char('Company ID in Banelco DirectDebit', required=True)
     }
 
-    def _check_account_gain(self, cr, uid, ids, context=None):
+    def _check_banelco_company_id(self, cr, uid, ids, context=None):
         for obj in self.browse(cr, uid, ids, context=context):
-            if obj.income_currency_exchange_account_id.company_id and obj.company_id != obj.income_currency_exchange_account_id.company_id:
-                return False
+            if obj.banelco_company_id:
+                if len(obj.banelco_company_id) != 4:
+                    return False
+                try:
+                    num = int(obj.banelco_company_id)
+                except ValueError:
+                    return False
         return True
 
-    def _check_account_loss(self, cr, uid, ids, context=None):
-        for obj in self.browse(cr, uid, ids, context=context):
-            if obj.expense_currency_exchange_account_id.company_id and obj.company_id != obj.expense_currency_exchange_account_id.company_id:
-                return False
-        return True
+    _constraints = [
+        (_check_banelco_company_id, 'The company id should be a four-digit number.', ['banelco_company_id']),
+    ]
 
-    def create(self, cr, uid, values, context=None):
-        id = super(banelco_config_settings, self).create(cr, uid, values, context)
-        # Hack: to avoid some nasty bug, related fields are not written upon record creation.
-        # Hence we write on those fields here.
-        vals = {}
-        for fname, field in self._columns.iteritems():
-            if isinstance(field, fields.related) and fname in values:
-                vals[fname] = values[fname]
-        self.write(cr, uid, [id], vals, context)
-        return id
+    def get_default_banelco_company_id(self, cr, uid, fields, context=None):
+        icp = self.pool.get('ir.config_parameter')
+        return {
+            'banelco_company_id': icp.get_param(cr, uid, 'banelco_company_id', '')
+        }
+
+    def set_banelco_company_id(self, cr, uid, ids, context=None):
+        config = self.browse(cr, uid, ids[0], context=context)
+        icp = self.pool.get('ir.config_parameter')
+        icp.set_param(cr, uid, 'banelco_company_id', config.banelco_company_id)
 
 #vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
