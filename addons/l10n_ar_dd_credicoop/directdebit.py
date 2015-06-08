@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from osv import fields,osv
+from osv import fields, osv
 from tools.translate import _
 from openerp import netsvc
 from datetime import date, datetime
@@ -42,25 +42,37 @@ currency_code_map = {
 
 ignore_symbol_chars = '-/\\'
 
+
 def to_numeric(value):
     return int(value) if value and value.isnumeric() else 0
 
-eb_communication_line_map = lambda l: {
-    'bank_code': to_numeric(l.partner_bank_id.bank.bcra_code if l.partner_bank_id.bank else 0),
-    'operation_code': 51,
-    'date_due': datetime.strptime(l.communication_id.debit_date or l.invoice_id.date_due, D_FORMAT).strftime("%y%m%d"),
-    'directdebit_code': l.communication_id.partner_bank_id.directdebit_code,
-    'partner_id': "%05d" % l.partner_id.id,
-    'currency_code': currency_code_map.get(l.invoice_id.currency_id.name, 'P'),
-    'cbu': to_numeric(l.partner_bank_id.acc_number),
-    'amount': int(l.invoice_id.amount_total * 100),
-    'cuit': to_numeric(l.communication_id.company_id.partner_id.document_number),
-    'description': (l.communication_id.line_description or l.invoice_id.name or '').encode('ascii','replace')[:10],
-    'document_id': "%015i" % l.invoice_id.id,
-#    'document_id': "%015i" % l.invoice_id.id,
-    'document_id': l.invoice_id.number or 'ERROR',
-    'response_code': '',
-}
+
+def eb_communication_line_map(l):
+    return {
+        'bank_code': to_numeric(l.partner_bank_id.bank.bcra_code
+                                if l.partner_bank_id.bank else 0),
+        'operation_code': 51,
+        'date_due': datetime.strptime(
+            l.communication_id.debit_date or
+            l.invoice_id.date_due, D_FORMAT).strftime("%y%m%d"),
+        'directdebit_code': l.communication_id.partner_bank_id.directdebit_code,
+        'partner_id': "%05d" % l.partner_id.id,
+        'currency_code': currency_code_map.get(
+            l.invoice_id.currency_id.name, 'P'),
+        'cbu': to_numeric(l.partner_bank_id.acc_number),
+        'amount': int(l.invoice_id.amount_total * 100),
+        'cuit': to_numeric(
+            l.communication_id.company_id.partner_id.document_number),
+        'description': (
+            l.communication_id.line_description or
+            l.invoice_id.name or
+            '').encode('ascii', 'replace')[:10],
+        'document_id': "%015i" % l.invoice_id.id,
+#       'document_id': "%015i" % l.invoice_id.id,
+        'document_id': l.invoice_id.number or 'ERROR',
+        'response_code': '',
+    }
+
 
 class directdebit_communication(osv.osv):
     _name = 'directdebit.communication'
@@ -71,13 +83,12 @@ class directdebit_communication(osv.osv):
         return r
 
     def _get_credicoop_input(self, cr, uid, ids, fields, args, context=None):
-        #import pdb; pdb.set_trace()
         return {}
 
     def _set_credicoop_input(self, cr, uid, ids,
                              field_name, field_value, arg, context=None):
         dd_line_obj = self.pool.get('directdebit.communication.line')
-        dd_input = field_value.decode('base64')
+        dd_input = field_value and field_value.decode('base64')
         if dd_input:
             dd_input = dd_input.split('\n')
             for line in dd_input:
@@ -96,8 +107,13 @@ class directdebit_communication(osv.osv):
                             {'response_code': data['response_code']})
 
     _columns = {
-        'credicoop_output': fields.function(_get_credicoop_output, type="binary", mode="model", string="File to send to credicoop", readonly="True", store=False),
-        'credicoop_input': fields.function(_get_credicoop_input, fnct_inv = _set_credicoop_input, type="binary", mode="model", string="File from credicoop", store=False),
+        'credicoop_output': fields.function(
+            _get_credicoop_output, type="binary", mode="model",
+            string="File to send to credicoop", readonly="True", store=False),
+        'credicoop_input': fields.function(
+            _get_credicoop_input, fnct_inv=_set_credicoop_input,
+            type="binary", mode="model", string="File from credicoop",
+            store=False),
     }
 
     def generate_output(self, cr, uid, ids, context=None):
@@ -115,7 +131,6 @@ class directdebit_communication(osv.osv):
         return r
 
     def read_input(self, cr, uid, ids, context=None):
-        #import pdb; pdb.set_trace()
         return {}
 
 directdebit_communication()
