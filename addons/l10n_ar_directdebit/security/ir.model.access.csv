@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_directdebit_response,access_directdebit_response,model_directdebit_response,,1,0,0,0
+access_directdebit_communication_line,access_directdebit_communication_line,model_directdebit_communication_line,,1,0,0,0
