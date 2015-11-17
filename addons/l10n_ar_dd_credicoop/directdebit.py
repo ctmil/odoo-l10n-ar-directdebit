@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from osv import fields, osv
-from tools.translate import _
+from openerp.osv import fields, osv
+from openerp.tools.translate import _
 from openerp import netsvc
 from datetime import date, datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as D_FORMAT
