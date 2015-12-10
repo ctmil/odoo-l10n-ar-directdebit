@@ -2,14 +2,12 @@
 <openerp>
     <data>
 
-        <record id="action_directdebit_new_communication_form" model="ir.actions.act_window">
+        <record id="action_directdebit_new_communication_form" model="ir.actions.server">
+            <field name="type">ir.actions.server</field>
             <field name="name">Generate Communication from Invoices</field>
-            <field name="type">ir.actions.act_window</field>
-            <field name="src_model">account.invoice</field>
-            <field name="res_model">directdebit.communication</field>
-            <field name="view_type">form</field>
-            <field name="view_mode">form</field>
-            <field name="target">current</field>
+            <field name="state">code</field>
+            <field name="model_id" ref="model_account_invoice"/>
+            <field name="code">action = model.create_communication()</field>
         </record>
 
         <record model="ir.values" id="action_directdebit_create_communication">

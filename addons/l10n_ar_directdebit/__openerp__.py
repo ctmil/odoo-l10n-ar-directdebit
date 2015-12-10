@@ -10,6 +10,7 @@
     'depends': [
         'base',
         'account',
+        'l10n_ar_bank',
     ],
     'demo':    [],
     'data':    [
