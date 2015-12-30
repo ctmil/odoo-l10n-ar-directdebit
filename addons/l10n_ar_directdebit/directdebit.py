@@ -25,8 +25,7 @@ class directdebit_line(models.Model):
     _description = 'Direct debit lines'
 
     @api.onchange('invoice_id')
-    def onchange_invoice_id(self):
-        self.ensure_one()
+    def invoice_id_change(self):
         bank_ids = self.invoice_id.partner_id.bank_ids.ids + [False]
         self.partner_bank_id = bank_ids[0]
 
@@ -46,7 +45,7 @@ class directdebit_line(models.Model):
     partner_bank_id = fields.Many2one(
         'res.partner.bank', 'Source Bank Account',
         domain="[('partner_id','=',partner_id)]",
-        context="{default_partner_id = partner_id}", required=True)
+        context="{'default_partner_id': partner_id}", required=True)
     operation_code = fields.Char(
         'Operation code', size=2)
     date_due = fields.Date(
