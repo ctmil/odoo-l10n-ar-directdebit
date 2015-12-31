@@ -40,7 +40,7 @@
                                 <field name="invoice_id" />
                                 <field name="partner_id" readonly="True"/>
                                 <field name="partner_bank_id"/>
-                                <field name="amount_total" readonly="True" sum="Total Amount"/>
+                                <field name="amount" readonly="True" sum="Total Amount"/>
                             </tree>
                         </field>
                     </sheet>
