@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Direct Debit',
-    'version': '0.1',
+    'version': '8.0.1',
     'category': 'Sale',
     'description': 'Direct Debit support for Agentinian Banks',
     'author': 'Moldeo Interactive',
