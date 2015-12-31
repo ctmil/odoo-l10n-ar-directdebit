@@ -2,6 +2,7 @@
 from openerp import fields, api, models, _
 from openerp.exceptions import Warning
 from datetime import datetime, timedelta
+import openerp.addons.decimal_precision as dp
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DATETIME_FORMAT
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as DATE_FORMAT
 
@@ -39,15 +40,10 @@ class directdebit_line(models.Model):
     partner_id = fields.Many2one(
         related='invoice_id.partner_id',
         string="Partner", readonly=True, store=False)
-    amount_total = fields.Float(
-        related='invoice_id.amount_total',
-        string="Amount", readonly=True, store=False)
     partner_bank_id = fields.Many2one(
         'res.partner.bank', 'Source Bank Account',
         domain="[('partner_id','=',partner_id)]",
         context="{'default_partner_id': partner_id}", required=True)
-    operation_code = fields.Char(
-        'Operation code', size=2)
     date_due = fields.Date(
         'Due date', size=6)
     directdebit_company_code = fields.Char(
@@ -57,16 +53,22 @@ class directdebit_line(models.Model):
     directdebit_currency_code = fields.Selection(
         [('P', 'Argentinian Pesos'), ('D', 'US Dollars')],
         'Currency Code'),
-    cbu = fields.Char(
-        'CBU', size=22)
     amount = fields.Float(
-        'Amount', digits=(8, 2))
-    cuit = fields.Char(
-        'CUIT', size=11)
-    description = fields.Char(
-        'Description', size=62)
-    response_code = fields.Many2one(
-        'directdebit.response', 'Response code'),
+        string='Amount',
+        digits=dp.get_precision('Account'),
+        compute='_compute_amount',
+        store=True, help="Amount to debit")
+    description = fields.Char('Description', size=62)
+    response_code = fields.Many2one('directdebit.response', 'Response code'),
+
+    @api.one
+    @api.depends('invoice_id.amount_total', 'invoice_id.residual',
+                 'communication_id.debit_residue')
+    def calc_amount(self):
+        self.amount = (
+            self.invoice_id.amount_total
+            if (self.communication_id.debit_residue)
+            else self.invoice_id.residual)
 
 
 class invoice(models.Model):
@@ -119,10 +121,6 @@ class directdebit_communication(models.Model):
     name = fields.Char(
         'Name',
         required=True)
-    line_description = fields.Char(
-        'Description',
-        help="Description of all lines. If not set use the invoice name.",
-        size=10)
     open_date = fields.Datetime(
         'Open Date',
         default=lambda *a: datetime.now().strftime(DATETIME_FORMAT)
@@ -161,6 +159,10 @@ class directdebit_communication(models.Model):
         [('EB', 'From company to bank'),
          ('BE', 'From bank to company')],
         'Information Traffic')
+    debit_residue = fields.Boolean(
+        'Debit residue until total',
+        default=True
+    )
 
     def do_request(self, cr, uid, ids, context=None):
         if self.validate(cr, uid, ids, context=context):

@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 from openerp.osv import fields, osv
-from openerp.tools.translate import _
-from openerp import netsvc
-from datetime import date, datetime
+from datetime import datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as D_FORMAT
-from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DT_FORMAT
 import re
 from StringIO import StringIO
 
@@ -60,16 +57,12 @@ def eb_communication_line_map(l):
         'currency_code': currency_code_map.get(
             l.invoice_id.currency_id.name, 'P'),
         'cbu': to_numeric(l.partner_bank_id.acc_number),
-        'amount': int(l.invoice_id.amount_total * 100),
+        'amount': int(l.amount * 100),
         'cuit': to_numeric(
             l.communication_id.company_id.partner_id.document_number),
-        'description': (
-            l.communication_id.line_description or
-            l.invoice_id.name or
-            '').encode('ascii', 'replace')[:10],
-        'document_id': "%015i" % l.invoice_id.id,
-#       'document_id': "%015i" % l.invoice_id.id,
-        'document_id': l.invoice_id.number or 'ERROR',
+        'description':
+        (l.invoice_id.name or '').encode('ascii', 'replace')[:10],
+        'document_id': "%015x" % l.invoice_id.id,
         'response_code': '',
     }
 
