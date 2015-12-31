@@ -64,7 +64,7 @@ class directdebit_line(models.Model):
     @api.one
     @api.depends('invoice_id.amount_total', 'invoice_id.residual',
                  'communication_id.debit_residue')
-    def calc_amount(self):
+    def _compute_amount(self):
         self.amount = (
             self.invoice_id.amount_total
             if (self.communication_id.debit_residue)
