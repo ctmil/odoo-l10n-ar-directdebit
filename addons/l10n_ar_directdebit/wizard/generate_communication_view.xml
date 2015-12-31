@@ -14,7 +14,7 @@
             <field name="model_id" ref="account.model_account_invoice" />
             <field name="name">Generate Communication</field>
             <field name="key2">client_action_multi</field>
-            <field name="value" eval="'ir.actions.act_window,' +str(ref('action_directdebit_new_communication_form'))" />
+            <field name="value" eval="'ir.actions.server,' +str(ref('action_directdebit_new_communication_form'))" />
             <field name="key">action</field>
             <field name="model">account.invoice</field>
         </record>
