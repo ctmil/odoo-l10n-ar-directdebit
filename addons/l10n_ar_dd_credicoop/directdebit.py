@@ -79,6 +79,7 @@ class directdebit_communication(models.Model):
     @api.multi
     def generate_output(self):
         self.ensure_one()
+        if com.
         if com.state == 'draft':
             r[com.id] = None
             continue
