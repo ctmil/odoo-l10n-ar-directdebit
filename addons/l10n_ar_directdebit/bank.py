@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from openerp import fields, api, models
+from openerp import fields, models
 
 
 class partner_bank(models.Model):
@@ -10,6 +10,10 @@ class partner_bank(models.Model):
         'Direct Debit Identification',
         help='Unique Identification Code assigned by the bank to the'
         ' partner to execute Direct Debits.')
+    directdebit_uri_publish = fields.Char(
+        'Publish Direct Debit URI')
+    directdebit_uri_retrieve = fields.Char(
+        'Retrieve Direct Debit URI')
     directdebit_user = fields.Char(
         'Direct Debit Credential')
     directdebit_password = fields.Char(

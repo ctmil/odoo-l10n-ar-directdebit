@@ -11,16 +11,23 @@
         'base',
         'account',
         'l10n_ar_bank',
+        'l10n_ar_invoice',
     ],
-    'demo':    [],
-    'data':    [
+    'demo': [],
+    'data': [
         'data/bank_view.xml',
         'data/directdebit_view.xml',
         'wizard/generate_communication_view.xml',
         'security/direct_debit_security.xml',
         'security/ir.model.access.csv',
     ],
-    'test':    [
+    'test': [
+        'test/products.yml',
+        'test/partners.yml',
+        'test/com_ri1.yml',
+        'test/com_ri2.yml',
+        'test/inv_ri2ri.yml',
+        'test/inv_ri2rm.yml',
     ],
     'installable': True,
 }

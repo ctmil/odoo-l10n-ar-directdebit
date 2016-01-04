@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import openerp.addons.decimal_precision as dp
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DATETIME_FORMAT
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as DATE_FORMAT
-
+from urlparse import urlparse
 
 class directdebit_response(models.Model):
     _name = 'directdebit.response'
@@ -247,5 +247,74 @@ class directdebit_communication(models.Model):
             com._validate_lines()
 
         return True
+
+    @api.multi
+    def generate_output(self):
+        raise NotImplemented
+
+    @api.multi
+    def read_input(self):
+        raise NotImplemented
+
+    @api.multi
+    def _publish_ftp(self, url, data):
+        self.ensure_one()
+        raise NotImplemented
+
+    @api.multi
+    def _publish_file(self, url, data):
+        self.ensure_one()
+        raise NotImplemented
+
+    @api.multi
+    def _publish_attachment(self, url, data):
+        self.ensure_one()
+        raise NotImplemented
+
+    @api.multi
+    def _retrieve_ftp(self, url):
+        self.ensure_one()
+        raise NotImplemented
+
+    @api.multi
+    def _retrieve_file(self, url):
+        self.ensure_one()
+        raise NotImplemented
+
+    @api.multi
+    def _retrieve_attachment(self, url):
+        self.ensure_one()
+        raise NotImplemented
+
+    @api.multi
+    def publish(self):
+        for com in self:
+            url = urlparse(com.partner_bank_id.directdebit_url)
+            function_name = '_publish_%s' % url.scheme
+
+            if not hasattr(com, function_name):
+                raise Warning(_("URL scheme '%s' is not supported") %
+                              url.scheme)
+
+            function = getattr(com, function_name)
+            data = com.generate_output()
+
+            function(self, url)
+
+    @api.multi
+    def retrieve(self):
+        for com in self:
+            url = urlparse(com.partner_bank_id.directdebit_url)
+            function_name = '_retrieve_%s' % url.scheme
+
+            if not hasattr(com, function_name):
+                raise Warning(_("URL scheme '%s' is not supported") %
+                              url.scheme)
+
+            function = getattr(com, function_name)
+
+            result = function(self, url)
+
+            com.read_input(result)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

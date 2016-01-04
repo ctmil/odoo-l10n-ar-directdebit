@@ -5,6 +5,11 @@ from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as D_FORMAT
 import re
 from StringIO import StringIO
 
+from ftplib import FTP
+
+credicoop_server = "ftp.credicoop.com.ar"
+push_directory = ""
+
 eb_communication_line = "{bank_code:03d}"\
                         "{operation_code:02d}"\
                         "{date_due:6s}"\
@@ -67,19 +72,26 @@ def eb_communication_line_map(l):
     }
 
 
-class directdebit_communication(osv.osv):
+class directdebit_communication(models.Model):
     _name = 'directdebit.communication'
     _inherit = 'directdebit.communication'
 
-    def _get_credicoop_output(self, cr, uid, ids, fields, args, context=None):
-        r = self.generate_output(cr, uid, ids, context=context)
-        return r
+    @api.multi
+    def generate_output(self):
+        self.ensure_one()
+        if com.state == 'draft':
+            r[com.id] = None
+            continue
+        out = StringIO()
+        for line in com.line_ids:
+            ml = eb_communication_line_map(line)
+            ol = eb_communication_line.format(**ml)
+            out.write(ol)
+        return out.getvalue()
 
-    def _get_credicoop_input(self, cr, uid, ids, fields, args, context=None):
-        return {}
-
-    def _set_credicoop_input(self, cr, uid, ids,
-                             field_name, field_value, arg, context=None):
+    @api.multi
+    def read_input(self, data):
+        self.ensure_one()
         dd_line_obj = self.pool.get('directdebit.communication.line')
         dd_input = field_value and field_value.decode('base64')
         if dd_input:
@@ -99,31 +111,6 @@ class directdebit_communication(osv.osv):
                             cr, uid, dd_line_ids,
                             {'response_code': data['response_code']})
 
-    _columns = {
-        'credicoop_output': fields.function(
-            _get_credicoop_output, type="binary", mode="model",
-            string="File to send to credicoop", readonly="True", store=False),
-        'credicoop_input': fields.function(
-            _get_credicoop_input, fnct_inv=_set_credicoop_input,
-            type="binary", mode="model", string="File from credicoop",
-            store=False),
-    }
-
-    def generate_output(self, cr, uid, ids, context=None):
-        r = {}
-        for com in self.browse(cr, uid, ids):
-            if com.state == 'draft':
-                r[com.id] = None
-                continue
-            out = StringIO()
-            for line in com.line_ids:
-                ml = eb_communication_line_map(line)
-                ol = eb_communication_line.format(**ml)
-                out.write(ol)
-            r[com.id] = out.getvalue().encode('base64')
-        return r
-
-    def read_input(self, cr, uid, ids, context=None):
         return {}
 
 directdebit_communication()
