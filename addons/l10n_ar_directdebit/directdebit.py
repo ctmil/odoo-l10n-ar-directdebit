@@ -52,14 +52,14 @@ class directdebit_line(models.Model):
         'Partner Company Code', size=21)
     directdebit_currency_code = fields.Selection(
         [('P', 'Argentinian Pesos'), ('D', 'US Dollars')],
-        'Currency Code'),
+        'Currency Code')
     amount = fields.Float(
         string='Amount',
         digits=dp.get_precision('Account'),
         compute='_compute_amount',
         store=True, help="Amount to debit")
     description = fields.Char('Description', size=62)
-    response_code = fields.Many2one('directdebit.response', 'Response code'),
+    response_code = fields.Many2one('directdebit.response', 'Response code')
 
     @api.one
     @api.depends('invoice_id.amount_total', 'invoice_id.residual',
