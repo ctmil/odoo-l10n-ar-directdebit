@@ -123,19 +123,16 @@ class directdebit_communication(models.Model):
         required=True)
     open_date = fields.Datetime(
         'Open Date',
-        default=lambda *a: datetime.now().strftime(DATETIME_FORMAT)
-    )
+        default=lambda *a: datetime.now().strftime(DATETIME_FORMAT))
     debit_date = fields.Date(
         'Debit date',
         default=lambda *a: (datetime.now() + timedelta(days=3)
-                            ).strftime(DATETIME_FORMAT)
-    )
+                            ).strftime(DATETIME_FORMAT))
     company_id = fields.Many2one(
         'res.company',
         'Company',
         default=lambda self: self.env.user.company_id.id,
-        required=True,
-    )
+        required=True)
     partner_bank_id = fields.Many2one(
         'res.partner.bank',
         'Target Bank Account',
@@ -161,8 +158,11 @@ class directdebit_communication(models.Model):
         'Information Traffic')
     debit_residue = fields.Boolean(
         'Debit residue until total',
-        default=True
-    )
+        default=True)
+    line_description = fields.Char(
+        'Description', 
+        help='Description for all lines. If not set use the invoice name.',
+        size=10)
 
     def do_request(self, cr, uid, ids, context=None):
         if self.validate(cr, uid, ids, context=context):

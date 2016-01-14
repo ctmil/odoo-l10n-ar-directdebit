@@ -61,7 +61,7 @@ def eb_communication_line_map(l):
         'cuit': to_numeric(
             l.communication_id.company_id.partner_id.document_number),
         'description':
-        (l.invoice_id.name or '').encode('ascii', 'replace')[:10],
+        (l.communication_id.line_description or l.invoice_id.name or '').encode('ascii', 'replace')[:10],
         'document_id': "%015x" % l.invoice_id.id,
         'response_code': '',
     }
