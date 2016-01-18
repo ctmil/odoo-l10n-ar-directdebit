@@ -179,7 +179,9 @@ class directdebit_communication(models.Model):
 
     def do_todraft(self, cr, uid, ids, context=None):
         self.write(cr, uid, ids, {'state': 'draft'})
-        pass
+        self.delete_workflow()
+        self.create_workflow()
+        return True
 
     @api.multi
     def _validate_date(self):
