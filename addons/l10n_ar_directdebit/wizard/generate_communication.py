@@ -1,30 +1,93 @@
 # -*- coding: utf-8 -*-
-from osv import fields,osv
-from tools.translate import _
-from openerp import netsvc
+from openerp import fields, models, api
+from datetime import datetime, timedelta
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DATETIME_FORMAT
 
-class wiz_create_communication(osv.osv_memory):
-    _name = 'directdebit.create_communication'
+
+class wiz_create_communication(models.TransientModel):
+    _name = 'directdebit.wiz_create_communication'
     _description = 'Create communication from invoices'
 
-    _columns = {
-        'name': fields.char('Name', required=True),
-        'line_description': fields.char('Description', help="Description of all lines. If not set use the invoice name.", size=10),
-        'open_date': fields.datetime('Open Date'),
-        'company_id': fields.many2one('res.company', 'Company', required=True),
-        'partner_bank_id': fields.many2one('res.partner.bank', 'Target Bank Account',
-                                           domain="[('company_id','=',company_id)]", context="{'default_company_id':company_id}"),
-    }
+    @api.multi
+    def _default_line_ids(self):
+        context = self.env.context
 
-    _defaults = {
-        'open_date': lambda *a: time.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-        'company_id': lambda self, cr, uid, *a: self.pool.get('res.users').browse(cr, uid, uid).company_id.id,
-    }
+        invoice_pool = self.env['account.invoice']
+        r = []
 
-    def execute(self, cr, uid, ids, context=None):
-        return {}
+        def get_partner_bank_id(inv_id):
+            par = invoice_pool.browse(inv_id).partner_id
+            accounts = par.bank_ids and [account.id
+                                         for account in par.bank_ids
+                                         if account.bank
+                                         and account.bank.bcra_code
+                                         and account.is_valid_cbu()]
+            if accounts:
+                return accounts[0]
+            else:
+                return False
+
+        if context.get('invoices', False):
+            invoice_ids = context.get('invoices', [])
+            r = [(0, 0, {'invoice_id': inv_id,
+                         'partner_bank_id': get_partner_bank_id(inv_id)})
+                 for inv_id in invoice_ids]
+        return r
+
+    name = fields.Char(
+        'Name',
+        required=True)
+    open_date = fields.Datetime(
+        'Open Date',
+        default=lambda *a: datetime.now().strftime(DATETIME_FORMAT)
+    )
+    debit_date = fields.Date(
+        'Debit date',
+        default=lambda *a: (datetime.now() + timedelta(days=3)
+                            ).strftime(DATETIME_FORMAT)
+    )
+    company_id = fields.Many2one(
+        'res.company',
+        'Company',
+        default=lambda self: self.env.user.company_id.id,
+        required=True
+    )
+    partner_bank_id = fields.Many2one(
+        'res.partner.bank',
+        'Target Bank Account',
+        domain="[('company_id','=',company_id)]",
+        context="{'default_company_id':company_id}",
+        required=True)
+    debit_residue = fields.Boolean(
+        'Debit residue until total',
+        default=True
+    )
+
+    def execute(self):
+        self.ensure_one()
+
+        com_obj = self.env['directdebit.communication']
+
+        com = com_obj.create({
+            'name': self.name,
+            'open_date': self.open_date,
+            'debit_date': self.debit_date,
+            'company_id': self.company_id,
+            'partner_bank_id': self.partner_bank_id,
+            'line_ids': self._default_line_ids(),
+            'debit_residue': self.debit_residue,
+            'traffic': 'EB',
+        })
+
+        return {
+            'name': _('New Communication'),
+            'res_model': 'directdebit.communication',
+            'res_id': com.id,
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'view_type': 'form',
+        }
 
 wiz_create_communication()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
-
