@@ -2,23 +2,48 @@
 <openerp>
     <data>
 
-        <record id="action_directdebit_new_communication_form" model="ir.actions.server">
-            <field name="type">ir.actions.server</field>
-            <field name="name">Generate Communication from Invoices</field>
-            <field name="state">code</field>
-            <field name="model_id" ref="model_account_invoice"/>
-            <field name="code">action = model.create_communication()</field>
-        </record>
+    <record id="create_communication" model="ir.ui.view">
+        <field name="name">directdebit.create_communication.form</field>
+        <field name="model">directdebit.wiz_create_communication</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+          <form string="Create communication from invoices">
+              <group string="Create communication from invoices">
+                  <field name="name"/>
+                  <field name="open_date"/>
+                  <field name="debit_date"/>
+                  <field name="company_id"/>
+                  <field name="partner_bank_id"/>
+                  <field name="debit_residue"/>
+              </group>
+              <footer>
+                  <button string="Generate" name="execute" type="object" icon="gtk-ok" colspan="2"/>
+                  or
+                  <button string="Cancel" special="cancel" name="on_cancel" icon="gtk-cancel" colspan="2"/> 
+              </footer>
+          </form>
+        </field>
+    </record>
 
-        <record model="ir.values" id="action_directdebit_create_communication">
-            <field name="model_id" ref="account.model_account_invoice" />
-            <field name="name">Generate Communication</field>
-            <field name="key2">client_action_multi</field>
-            <field name="value" eval="'ir.actions.server,' +str(ref('action_directdebit_new_communication_form'))" />
-            <field name="key">action</field>
-            <field name="model">account.invoice</field>
-        </record>
-   
+    <record id="create_communication_action" model="ir.actions.act_window">
+        <field name="name">Create communication from invoices</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="src_model">account.invoice</field>
+        <field name="res_model">directdebit.wiz_create_communication</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record model="ir.values" id="create_communication_value">
+        <field name="model_id" ref="account.model_account_invoice" />
+        <field name="name">Create communication from invoices</field>
+        <field name="key2">client_action_multi</field>
+        <field name="value" eval="'ir.actions.act_window,' +str(ref('create_communication_action'))" />
+        <field name="key">action</field>
+        <field name="model">account.invoice</field>
+    </record>
+  
     </data>
 </openerp>
 <!--

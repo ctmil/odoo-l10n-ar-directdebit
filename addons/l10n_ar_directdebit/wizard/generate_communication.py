@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from openerp import fields, models, api
+from openerp import fields, models, api, _
 from datetime import datetime, timedelta
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DATETIME_FORMAT
 
@@ -27,8 +27,9 @@ class wiz_create_communication(models.TransientModel):
             else:
                 return False
 
-        if context.get('invoices', False):
-            invoice_ids = context.get('invoices', [])
+        invoice_ids = context.get('invoices', context.get('active_ids', False))
+
+        if invoice_ids:
             r = [(0, 0, {'invoice_id': inv_id,
                          'partner_bank_id': get_partner_bank_id(inv_id)})
                  for inv_id in invoice_ids]
@@ -63,6 +64,7 @@ class wiz_create_communication(models.TransientModel):
         default=True
     )
 
+    @api.multi
     def execute(self):
         self.ensure_one()
 
@@ -72,8 +74,8 @@ class wiz_create_communication(models.TransientModel):
             'name': self.name,
             'open_date': self.open_date,
             'debit_date': self.debit_date,
-            'company_id': self.company_id,
-            'partner_bank_id': self.partner_bank_id,
+            'company_id': self.company_id.id,
+            'partner_bank_id': self.partner_bank_id.id,
             'line_ids': self._default_line_ids(),
             'debit_residue': self.debit_residue,
             'traffic': 'EB',
