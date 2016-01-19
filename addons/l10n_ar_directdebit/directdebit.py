@@ -144,7 +144,8 @@ class directdebit_communication(models.Model):
         'communication_id',
         'Lines',
         default=_default_line_ids,
-        ondelete='cascade')
+        ondelete='cascade',
+        copy=True)
     state = fields.Selection(
         [('draft', 'Draft'),
          ('open', 'Open'),
