@@ -15,6 +15,7 @@
                   <field name="company_id"/>
                   <field name="partner_bank_id"/>
                   <field name="debit_residue"/>
+                  <field name="line_description"/>
               </group>
               <footer>
                   <button string="Generate" name="execute" type="object" icon="gtk-ok" colspan="2"/>

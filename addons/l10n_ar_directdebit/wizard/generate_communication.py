@@ -40,19 +40,16 @@ class wiz_create_communication(models.TransientModel):
         required=True)
     open_date = fields.Datetime(
         'Open Date',
-        default=lambda *a: datetime.now().strftime(DATETIME_FORMAT)
-    )
+        default=lambda *a: datetime.now().strftime(DATETIME_FORMAT))
     debit_date = fields.Date(
         'Debit date',
         default=lambda *a: (datetime.now() + timedelta(days=3)
-                            ).strftime(DATETIME_FORMAT)
-    )
+                            ).strftime(DATETIME_FORMAT))
     company_id = fields.Many2one(
         'res.company',
         'Company',
         default=lambda self: self.env.user.company_id.id,
-        required=True
-    )
+        required=True)
     partner_bank_id = fields.Many2one(
         'res.partner.bank',
         'Target Bank Account',
@@ -61,8 +58,11 @@ class wiz_create_communication(models.TransientModel):
         required=True)
     debit_residue = fields.Boolean(
         'Debit residue until total',
-        default=True
-    )
+        default=True)
+    line_description = fields.Char(
+        'Description',
+        help='Description for all lines. If not set use the invoice name.',
+        size=10)
 
     @api.multi
     def execute(self):
@@ -78,6 +78,7 @@ class wiz_create_communication(models.TransientModel):
             'partner_bank_id': self.partner_bank_id.id,
             'line_ids': self._default_line_ids(),
             'debit_residue': self.debit_residue,
+            'line_description': self.line_description,
             'traffic': 'EB',
         })
 

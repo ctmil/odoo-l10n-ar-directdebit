@@ -35,6 +35,7 @@
                             <field name="debit_residue"/>
                             <field name="company_id"/>
                             <field name="partner_bank_id"/>
+                            <field name="line_description"/>
                         </group>
                         <field name="line_ids">
                             <tree editable="bottom">
