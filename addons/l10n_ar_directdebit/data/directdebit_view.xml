@@ -24,7 +24,7 @@
                         <button name="do_request" string="Request" type="object" states="draft" class="oe_highlight"/>
                         <button name="do_pool"    string="Pool Answer" type="object" states="open" class="oe_highlight"/>
                         <button name="do_cancel"  string="Cancel" type="object" states="draft,open"/>
-                        <button name="do_todraft"  string="Send to Draft" type="object" states="cancel"/>
+                        <button name="do_todraft"  string="Send to Draft" type="object" states="cancel,done"/>
                         <field name="state" widget="statusbar"/>
                     </header>
                     <sheet string="Communication">
