@@ -160,25 +160,29 @@ class directdebit_communication(models.Model):
         'Debit residue until total',
         default=True)
     line_description = fields.Char(
-        'Description', 
+        'Description',
         help='Description for all lines. If not set use the invoice name.',
         size=10)
 
-    def do_request(self, cr, uid, ids, context=None):
-        if self.validate(cr, uid, ids, context=context):
-            self.write(cr, uid, ids, {'state': 'open'})
+    @api.multi
+    def do_request(self):
+        if self.validate():
+            self.write({'state': 'open'})
         return True
 
-    def do_pool(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'state': 'done'})
+    @api.multi
+    def do_pool(self):
+        self.write({'state': 'done'})
         pass
 
-    def do_cancel(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'state': 'cancel'})
+    @api.multi
+    def do_cancel(self):
+        self.write({'state': 'cancel'})
         pass
 
-    def do_todraft(self, cr, uid, ids, context=None):
-        self.write(cr, uid, ids, {'state': 'draft'})
+    @api.multi
+    def do_todraft(self):
+        self.write({'state': 'draft'})
         self.delete_workflow()
         self.create_workflow()
         return True
