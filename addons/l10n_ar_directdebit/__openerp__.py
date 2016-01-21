@@ -16,6 +16,7 @@
     'data':    [
         'data/bank_view.xml',
         'data/directdebit_view.xml',
+        'data/directdebit_data.xml',
         'wizard/generate_communication_view.xml',
         'security/direct_debit_security.xml',
         'security/ir.model.access.csv',

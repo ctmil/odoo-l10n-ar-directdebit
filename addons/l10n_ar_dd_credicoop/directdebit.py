@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
-from openerp.osv import fields, osv
+from openerp import fields, api, models, _
 from datetime import datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as D_FORMAT
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DT_FORMAT
 import re
 from StringIO import StringIO
+import logging
+
+_logger = logging.getLogger(__name__)
 
 eb_communication_line = "{bank_code:03d}"\
                         "{operation_code:02d}"\
@@ -28,6 +32,8 @@ be_communication_line = r"(?P<bank_id>.{3})"\
                         r"(?P<cuit>.{11})"\
                         r"(?P<description>.{10})"\
                         r"(?P<document_id>.{15})"\
+                        r"(?P<ref_id>.{15})"\
+                        r"(?P<new_cbu>.{22})"\
                         r"(?P<response_code>.{3})"
 
 re_be_communication_line = re.compile(be_communication_line)
@@ -39,6 +45,31 @@ currency_code_map = {
 
 ignore_symbol_chars = '-/\\'
 
+response_code_message = {
+    'R02': 'Cuenta cerrada o suspendida',
+    'R03': 'Cuenta inexistente',
+    'R04': 'N° de Cuenta Inválida',
+    'R08': 'Orden de no pagar',
+    'R09': 'Día No Laborable',
+    'R10': 'Falta de fondos',
+    'R13': 'Sucursal inexistente',
+    'R14': 'Identificación del Cliente en la Empresa Errónea',
+    'R15': 'Baja del Servicio',
+    'R17': 'Error de Formato',
+    'R18': 'Fecha de Compensación Errónea',
+    'R19': 'Importe erróneo',
+    'R20': 'Moneda distinta a la de la cuenta de débito',
+    'R23': 'Sucursal No Habilitada',
+    'R24': 'Transacción duplicada',
+    'R28': 'Rechazo primer vencimiento',
+    'R29': 'Reversión ya Efectuada',
+    'R31': 'Vuelta atrás de la Cámara (Unwinding)',
+    'R34': 'Cliente no adherido',
+    'R61': 'No existe transacción original',
+    'R75': 'Fecha Inválida',
+    'R86': 'Identificación de Empresa Errónea',
+    'R91': 'Código de Banco incompatible con moneda',
+}
 
 def to_numeric(value):
     return int(value) if value and value.isnumeric() else 0
@@ -61,69 +92,95 @@ def eb_communication_line_map(l):
         'cuit': to_numeric(
             l.communication_id.company_id.partner_id.document_number),
         'description':
-        (l.communication_id.line_description or l.invoice_id.name or '').encode('ascii', 'replace')[:10],
+        (l.communication_id.line_description or l.invoice_id.name or ''
+         ).encode('ascii', 'replace')[:10],
         'document_id': "%015x" % l.invoice_id.id,
         'response_code': '',
     }
 
 
-class directdebit_communication(osv.osv):
+class directdebit_communication(models.Model):
     _name = 'directdebit.communication'
     _inherit = 'directdebit.communication'
 
-    def _get_credicoop_output(self, cr, uid, ids, fields, args, context=None):
-        r = self.generate_output(cr, uid, ids, context=context)
-        return r
+    @api.multi
+    def get_type(self):
+        self.ensure_one()
+        if self.partner_bank_id.bank.bcra_code == '00191':
+            return 'credicoop'
+        return super(directdebit_communication, self).get_type()
 
-    def _get_credicoop_input(self, cr, uid, ids, fields, args, context=None):
-        return {}
+    @api.multi
+    @api.returns('directdebit.communication')
+    def uri_attr(self):
+        self.ensure_one()
 
-    def _set_credicoop_input(self, cr, uid, ids,
-                             field_name, field_value, arg, context=None):
-        dd_line_obj = self.pool.get('directdebit.communication.line')
-        dd_input = field_value and field_value.decode('base64')
-        if dd_input:
-            dd_input = dd_input.split('\n')
-            for line in dd_input:
-                ml = re_be_communication_line.match(line)
-                if ml:
-                    data = ml.groupdict()
-                    par_id = int(data['partner_id'])
-                    amount = float(data['amount'])
-                    dd_line_ids = dd_line_obj.search(cr, uid, [
-                        ('id', '=', ids),
-                        ('partner_id', '=', par_id),
-                        ('amount', '=', amount)])
-                    if len(dd_line_ids) == 1:
-                        dd_line_obj.write(
-                            cr, uid, dd_line_ids,
-                            {'response_code': data['response_code']})
+        if not self.get_type() == 'credicoop':
+            return super(directdebit_communication, self).update_context()
 
-    _columns = {
-        'credicoop_output': fields.function(
-            _get_credicoop_output, type="binary", mode="model",
-            string="File to send to credicoop", readonly="True", store=False),
-        'credicoop_input': fields.function(
-            _get_credicoop_input, fnct_inv=_set_credicoop_input,
-            type="binary", mode="model", string="File from credicoop",
-            store=False),
-    }
 
-    def generate_output(self, cr, uid, ids, context=None):
-        r = {}
-        for com in self.browse(cr, uid, ids):
-            if com.state == 'draft':
-                r[com.id] = None
-                continue
-            out = StringIO()
-            for line in com.line_ids:
-                ml = eb_communication_line_map(line)
-                ol = eb_communication_line.format(**ml)
-                out.write(ol)
-            r[com.id] = out.getvalue().encode('base64')
-        return r
+        return {
+            'open_date': datetime.strptime(
+                self.open_date, DT_FORMAT).strftime("%d%m"),
+            'debit_date': datetime.strptime(
+                self.debit_date, D_FORMAT).strftime("%d%m"),
+            'today': datetime.today().strftime("%m%d"),
+        }
 
-    def read_input(self, cr, uid, ids, context=None):
+    @api.multi
+    def generate_request(self):
+        self.ensure_one()
+        if not self.get_type() == 'credicoop':
+            return super(directdebit_communication, self).generate_request()
+
+        out = StringIO()
+        for line in self.line_ids:
+            ml = eb_communication_line_map(line)
+            ol = eb_communication_line.format(**ml)
+            out.write(ol)
+
+        out.seek(0)
+        return out
+
+    @api.multi
+    def process_response(self, response):
+        self.ensure_one()
+        if not self.get_type() == 'credicoop':
+            return super(directdebit_communication, self).process_response(
+                response)
+
+        invoice_obj = self.env['account.invoice']
+
+        for line in response.split('\n'):
+            ml = re_be_communication_line.match(line)
+            if ml:
+                data = ml.groupdict()
+                inv = invoice_obj.browse(int(data['document_id'], 16))
+                amount = float(data['amount'])/10.
+                response_code = data['response_code'].strip()
+
+                _logger.debug("Line: %s" % line)
+
+                if inv.state != 'open':
+                    _logger.info("Invoice %s (id:%i) is not open."
+                                  " Ignoring payment." % (inv.number, inv.id))
+                    continue
+
+                if response_code == '':
+                    # Pay invoice
+                    self.pay_invoice(inv, amount)
+                    inv.message_post(body=_('Payed by Direct Debit'))
+                    _logger.info("Invoice %s (id:%i) is payed."
+                                  % (inv.number, inv.id))
+                else:
+                    # Cant pay
+                    message = response_code_message.get(
+                        response_code,
+                        'Not recognized code %s' % response_code)
+                    inv.message_post(body=_('Direct Debit ERROR: %s') % message)
+                    _logger.info("Invoice %s (id:%i) ERROR: %s."
+                                  % (inv.number, inv.id, message))
+
         return {}
 
 directdebit_communication()

@@ -1,0 +1,16 @@
+<openerp>
+    <data>
+        <record id="mt_dd_communication_requested" model="mail.message.subtype">
+            <field name="name">Requested</field>
+            <field name="res_model">directdebit.communication</field>
+            <field name="default" eval="False"/>
+            <field name="description">Request sended</field>
+        </record>
+        <record id="mt_dd_communication_responsed" model="mail.message.subtype">
+            <field name="name">Responsed</field>
+            <field name="res_model">directdebit.communication</field>
+            <field name="default" eval="False"/>
+            <field name="description">Got Response</field>
+        </record>
+    </data>
+</openerp>

@@ -10,10 +10,16 @@ class partner_bank(models.Model):
         'Direct Debit Identification',
         help='Unique Identification Code assigned by the bank to the'
         ' partner to execute Direct Debits.')
-    directdebit_user = fields.Char(
+    directdebit_username = fields.Char(
         'Direct Debit Credential')
     directdebit_password = fields.Char(
         'Direct Debit Password',
         password=True)
+    directdebit_request_uri = fields.Char(
+        'Direct Debit Request URI',
+        required=True)
+    directdebit_response_uri = fields.Char(
+        'Direct Debit Response URI',
+        required=True)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

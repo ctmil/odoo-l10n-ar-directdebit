@@ -7,10 +7,8 @@
             <field name="model">directdebit.communication</field>
 	    <field name="inherit_id" ref="l10n_ar_directdebit.directdebit_communication_form_view"/>
             <field name="arch" type="xml">
-		<field name="partner_bank_id" position="after">
-		    <field name="credicoop_output" attrs="{'invisible': [['state','!=','open']]}"/>
-		    <field name="credicoop_input"  attrs="{'invisible': [['state','!=','open']]}"/>
-		</field>
+                <field name="partner_bank_id" position="after">
+                </field>
             </field>
         </record>
 
