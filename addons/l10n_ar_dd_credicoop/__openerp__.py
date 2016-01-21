@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Direct Debit for Credicoop',
-    'version': '0.1',
+    'version': '8.0.2',
     'category': 'Sale',
     'description': 'Direct Debit support for the Agentinian Bank Banco Credicoop Cooperativo Limitado',
     'author': 'Moldeo Interactive',
