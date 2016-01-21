@@ -287,12 +287,12 @@ class directdebit_communication(models.Model):
         username = self.partner_bank_id.directdebit_username
         password = self.partner_bank_id.directdebit_password
 
+        _logger.info('Connecting to FTP server. (%s)' % uri)
+
         suri = uri.split('/')
         if not '@' in suri[2] and username and password:
             suri[2] = "%s:%s@%s" % (username, password, suri[2])
             uri = '/'.join(suri)
-
-        _logger.info('Connecting to FTP server.')
 
         try:
             req = urllib2.Request(uri)
