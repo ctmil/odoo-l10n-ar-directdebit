@@ -120,11 +120,16 @@ class directdebit_communication(models.Model):
 
 
         return {
-            'open_date': datetime.strptime(
+            'open_date_dm': datetime.strptime(
                 self.open_date, DT_FORMAT).strftime("%d%m"),
-            'debit_date': datetime.strptime(
+            'open_date_md': datetime.strptime(
+                self.open_date, DT_FORMAT).strftime("%m%d"),
+            'debit_date_md': datetime.strptime(
+                self.debit_date, D_FORMAT).strftime("%m%d"),
+            'debit_date_dm': datetime.strptime(
                 self.debit_date, D_FORMAT).strftime("%d%m"),
-            'today': datetime.today().strftime("%m%d"),
+            'today_md': datetime.today().strftime("%m%d"),
+            'today_dm': datetime.today().strftime("%d%m"),
         }
 
     @api.multi
