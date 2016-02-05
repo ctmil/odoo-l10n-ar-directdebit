@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
     <data>
-
         <record model="ir.ui.view" id="directdebit_partner_bank_form_view">
             <field name="name">directdebit.partner.bank.form</field>
             <field name="model">res.partner.bank</field>
-	    <field name="inherit_id" ref="base.view_partner_bank_form"/>
+            <field name="inherit_id" ref="base.view_partner_bank_form"/>
             <field name="arch" type="xml">
-		<field name="bank_bic" position="after">
-		    <field name="directdebit_code"/>
-		    <field name="directdebit_username"/>
-		    <field name="directdebit_password" password="1"/>
-		    <field name="directdebit_request_uri"/>
-		    <field name="directdebit_response_uri"/>
-		</field>
+            <field name="bank_bic" position="after">
+               <field name="directdebit_code"/>
+               <field name="directdebit_username"/>
+               <field name="directdebit_password" password="1"/>
+               <field name="directdebit_request_uri"/>
+               <field name="directdebit_response_uri"/>
             </field>
+          </field>
         </record>
 
     </data>
