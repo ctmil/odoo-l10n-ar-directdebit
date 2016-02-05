@@ -12,16 +12,19 @@
         'account',
         'l10n_ar_bank',
     ],
-    'demo':    [],
-    'data':    [
-        'data/bank_view.xml',
-        'data/directdebit_view.xml',
+    'demo': [
+        'data/demo_bankaccount.yml',
+    ],
+    'data': [
         'data/directdebit_data.xml',
-        'wizard/generate_communication_view.xml',
+        'views/bank_view.xml',
+        'views/directdebit_view.xml',
+        'views/generate_communication_view.xml',
         'security/direct_debit_security.xml',
         'security/ir.model.access.csv',
     ],
-    'test':    [
+    'test': [
+        # 'test/generate_communication_wizard.yml',
     ],
     'installable': True,
 }

@@ -1,0 +1,5 @@
+-
+ Create bank account for demo.
+-
+  !record {model: res.partner.bank, id: dd_account}:
+ 

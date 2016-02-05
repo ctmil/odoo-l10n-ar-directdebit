@@ -6,14 +6,19 @@
             <field name="model">res.partner.bank</field>
             <field name="inherit_id" ref="base.view_partner_bank_form"/>
             <field name="arch" type="xml">
-            <field name="bank_bic" position="after">
-               <field name="directdebit_code"/>
-               <field name="directdebit_username"/>
-               <field name="directdebit_password" password="1"/>
-               <field name="directdebit_request_uri"/>
-               <field name="directdebit_response_uri"/>
+              <group name="bank" position="after">
+                  <group name="directdebit" string="Direct Debit Configuration">
+                    <field name="use_directdebit"/>
+                    <field name="directdebit_code" attrs="{'invisible': [('use_directdebit', '=', False)]}"/>
+                    <field name="directdebit_username" attrs="{'invisible': [('use_directdebit', '=', False)]}"/>
+                    <field name="directdebit_password" password="1" attrs="{'invisible': [('use_directdebit', '=', False)]}"/>
+                    <field name="directdebit_request_uri"
+                        attrs="{'invisible': [('use_directdebit', '=', False)], 'required': [('use_directdebit','=', True)]}"/>
+                    <field name="directdebit_response_uri"
+                        attrs="{'invisible': [('use_directdebit', '=', False)], 'required': [('use_directdebit','=', True)]}"/>
+                  </group>
+              </group>
             </field>
-          </field>
         </record>
 
     </data>

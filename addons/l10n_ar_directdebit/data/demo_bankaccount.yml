@@ -1,0 +1,11 @@
+-
+ Create bank account for demo.
+-
+  !record {model: res.partner.bank, id: dd_account}:
+    state: bank
+    acc_number: 00000001
+    bank_name: The bank
+    use_directdebit: True
+    directdebit_request_uri: file:///tmp/dd.request.txt
+    directdebit_response_uri: file:///tmp/dd.response.txt
+
