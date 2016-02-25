@@ -1,87 +1,72 @@
 # -*- coding: utf-8 -*-
-from osv import fields,osv
-from tools.translate import _
+from openerp.osv import fields,osv
+from openerp.tools.translate import _
 from openerp import netsvc
 from datetime import date, datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as D_FORMAT
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DT_FORMAT
+import csv
 import re
 from StringIO import StringIO
-
-eb_communication_line = "{bank_code:03d}"\
-                        "{operation_code:02d}"\
-                        "{date_due:6s}"\
-                        "{directdebit_code:05d}"\
-                        "{partner_id:<22s}"\
-                        "{currency_code:1s}"\
-                        "{cbu:022d}"\
-                        "{amount:010d}"\
-                        "{cuit:011d}"\
-                        "{description:<10s}"\
-                        "{document_id:<15s}\n"
-
-be_communication_line = r"(?P<bank_id>.{3})"\
-                        r"(?P<operation_code>.{2})"\
-                        r"(?P<date_due>.{6})"\
-                        r"(?P<directdebit_code>.{5})"\
-                        r"(?P<partner_id>.{22})"\
-                        r"(?P<currency_code>.{1})"\
-                        r"(?P<cbu>.{22})"\
-                        r"(?P<amount>.{10})"\
-                        r"(?P<cuit>.{11})"\
-                        r"(?P<description>.{10})"\
-                        r"(?P<document_id>.{15})"\
-                        r"(?P<response_code>.{3})"
-
-re_be_communication_line = re.compile(be_communication_line)
-
-currency_code_map = {
-    'ARS': 'P',
-    'USD': 'D',
-}
-
-ignore_symbol_chars = '-/\\'
+import string
+import unicodedata
+try:
+    import simplejson as json
+except:
+    import json
 
 def to_numeric(value):
     return int(value) if value and value.isnumeric() else 0
 
-eb_communication_line_map = lambda l: {
-    'bank_code': to_numeric(l.partner_bank_id.bank.bcra_code if l.partner_bank_id.bank else 0),
-    'operation_code': 51,
-    'date_due': datetime.strptime(l.communication_id.debit_date or l.invoice_id.date_due, D_FORMAT).strftime("%y%m%d"),
-    'directdebit_code': l.communication_id.partner_bank_id.directdebit_code,
-    'partner_id': "%05d" % l.partner_id.id,
-    'currency_code': currency_code_map.get(l.invoice_id.currency_id.name, 'P'),
-    'cbu': to_numeric(l.partner_bank_id.acc_number),
-    'amount': int(l.invoice_id.amount_total * 100),
-    'cuit': to_numeric(l.communication_id.company_id.partner_id.document_number),
-    'description': (l.communication_id.line_description or l.invoice_id.name or '').encode('ascii','replace')[:10],
-    'document_id': "%015i" % l.invoice_id.id,
-#    'document_id': "%015i" % l.invoice_id.id,
-    'document_id': l.invoice_id.number or 'ERROR',
-    'response_code': '',
-}
+def uniform(string, strtype='utf8'):
+    string = unicode(string, strtype)
+    return unicodedata.normalize('NFD', string).encode('ascii', 'ignore')
 
 class directdebit_communication(osv.osv):
     _name = 'directdebit.communication'
     _inherit = 'directdebit.communication'
 
-    def _get_credicoop_output(self, cr, uid, ids, fields, args, context=None):
+    def _valid_alphanumeric(self, text):
+        # Replace "dangerous" characters
+        text = uniform(text)
+
+        # Uppercase
+        text = text.upper()
+
+        # Allow unly "safe" characters
+        valid = string.ascii_uppercase + string.digits + ' ()*.:;/-'
+        for char in text:
+            if not char in valid:
+                text = text.replace(char, '')
+        return text
+
+    def _get_banelco_output(self, cr, uid, ids, fields, args, context=None):
         r = self.generate_output(cr, uid, ids, context=context)
         return r
 
-    def _get_credicoop_input(self, cr, uid, ids, fields, args, context=None):
-        #import pdb; pdb.set_trace()
+    def _get_banelco_output_filename(self, cr, uid, ids, fields, args, context=None):
+        import pdb; pdb.set_trace()
+        r = {}
+        now = datetime.now()
+        icp = self.pool.get('ir.config_parameter')
+        banelco_company_id = icp.get_param(cr, uid, 'banelco_company_id', '')
+        for com in self.browse(cr, uid, ids):
+            r[com.id] = "FAC%s%s.csv" % (banelco_company_id, now.strftime('%m%d%Y'))
+
+        return r
+
+    def _get_banelco_input(self, cr, uid, ids, fields, args, context=None):
         return {}
 
-    def _set_credicoop_input(self, cr, uid, ids,
+    def _set_banelco_input(self, cr, uid, ids,
                              field_name, field_value, arg, context=None):
+        return None
         dd_line_obj = self.pool.get('directdebit.communication.line')
         dd_input = field_value.decode('base64')
         if dd_input:
             dd_input = dd_input.split('\n')
             for line in dd_input:
-                ml = re_be_communication_line.match(line)
+                #ml = re_be_communication_line.match(line)
                 if ml:
                     data = ml.groupdict()
                     par_id = int(data['partner_id'])
@@ -96,26 +81,98 @@ class directdebit_communication(osv.osv):
                             {'response_code': data['response_code']})
 
     _columns = {
-        'credicoop_output': fields.function(_get_credicoop_output, type="binary", mode="model", string="File to send to credicoop", readonly="True", store=False),
-        'credicoop_input': fields.function(_get_credicoop_input, fnct_inv = _set_credicoop_input, type="binary", mode="model", string="File from credicoop", store=False),
+        'banelco_output': fields.function(_get_banelco_output, type="binary", mode="model", string="File to send to Banelco", readonly="True", store=False),
+        'banelco_output_filename': fields.function(_get_banelco_output_filename, type="char", mode="model", string="Filename to Banelco", store=False),
+        'banelco_input': fields.function(_get_banelco_input, fnct_inv = _set_banelco_input, type="binary", mode="model", string="File from Banelco", store=False),
     }
 
     def generate_output(self, cr, uid, ids, context=None):
         r = {}
+        pt_obj = self.pool.get('account.payment.term')
         for com in self.browse(cr, uid, ids):
             if com.state == 'draft':
                 r[com.id] = None
                 continue
+
             out = StringIO()
-            for line in com.line_ids:
-                ml = eb_communication_line_map(line)
-                ol = eb_communication_line.format(**ml)
-                out.write(ol)
+            writer = csv.writer(out, dialect='excel')
+            for l in com.line_ids:
+                ol = []
+                ref_number = "%012d" % l.partner_id.id
+                ol.append(ref_number)
+                bill_id = l.invoice_id.id
+                ol.append(bill_id)
+
+                # Calculate due dates:
+                # If invoice has a date, calculate dues an amounts based on payment term
+                if l.invoice_id.date_invoice:
+                    ref_date = l.invoice_id.date_invoice
+                    payment_term_id = l.invoice_id.payment_term.id
+                    if payment_term_id:
+                        pterm_list = pt_obj.compute(cr, uid, payment_term_id, value=1, date_ref=ref_date)
+                        if pterm_list:
+                            pterm_list.sort()
+                            dues_amounts = []
+                            for pterm in pterm_list[:3]:
+                                date = pterm[0] # YYYY-MM-DD
+                                year = date[:4]
+                                month = date[5:7]
+                                day = date[-2:]
+
+                                dues_amounts.append(('%s%s%s'%(day,month,year), pterm[-1]))
+
+                    else:
+                        # No payment term
+                        date = datetime.strptime(ref_date, D_FORMAT).strftime("%d%m%Y")
+                        dues_amounts = [(date, l.invoice_id.amount_total), None, None]
+
+#                elif l.invoice_id.date_due:
+#                    # If invoice has no date, but a due date, set a single amount and due date
+#                    ref_date = l.invoice_id.date_due
+#                    date = datetime.strptime(ref_date, D_FORMAT).strftime("%d%m%Y")
+#                    dues_amounts = [(date, l.invoice_id.amount_total), None, None]
+#                elif l.communication_id.debit_date:
+#                    ref_date = l.communication_id.debit_date
+#                    # If invoice has neither date nor due date, set a single amount and due date based
+#                    # on communication debit_date
+#                    date = datetime.strptime(ref_date, D_FORMAT).strftime("%d%m%Y")
+#                    dues_amounts = [(date, l.invoice_id.amount_total), None, None]
+#                else:
+#                    # No reference date, skip it
+#                    continue
+
+                # Get first 3 due dates and amounts
+                for da in dues_amounts[:3]:
+                    date_due = ""
+                    amount = ""
+                    if not da is None:
+                        date_due = da[0]
+                        amount = da[1]
+                        amount_int = int(amount)
+                        amount_dec = int((amount - amount_int)*100)
+                        amount = "%s,%s" % (amount_int, amount_dec)
+                    ol.append(date_due)
+                    ol.append(amount)
+
+
+                prev_ref = ""
+                ol.append(prev_ref)
+
+                msg_ticket = self._valid_alphanumeric(l.invoice_id.number)
+                ol.append(msg_ticket)
+
+                msg_screen = self._valid_alphanumeric(l.invoice_id.number)
+                ol.append(msg_screen)
+
+                code_bar = ""
+                ol.append(code_bar)
+
+                writer.writerow(ol)
+
             r[com.id] = out.getvalue().encode('base64')
         return r
 
     def read_input(self, cr, uid, ids, context=None):
-        #import pdb; pdb.set_trace()
         return {}
 
 directdebit_communication()
