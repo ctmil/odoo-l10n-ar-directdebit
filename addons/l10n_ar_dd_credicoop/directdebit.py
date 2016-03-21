@@ -174,7 +174,7 @@ class directdebit_communication(models.Model):
                 if response_code == '':
                     # Pay invoice
                     self.pay_invoice(inv, amount)
-                    inv.message_post(body=_('Payed by Direct Debit'))
+                    inv.message_post(body=_('Paid by Direct Debit'))
                     _logger.info("Invoice %s (id:%i) is payed."
                                   % (inv.number, inv.id))
                 else:
