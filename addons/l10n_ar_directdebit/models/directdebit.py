@@ -273,6 +273,8 @@ class directdebit_communication(models.Model):
         """
         Retrieve file from ftp server and process with bank protocol logic.
         """
+        self.ensure_one()
+
         import urllib2
 
         try:
@@ -281,6 +283,15 @@ class directdebit_communication(models.Model):
         except KeyError, e:
             raise Warning(_("Not exists variable '%s' to complete URI.")
                           % e.message)
+
+        att = self.env['ir.attachment'].search([
+            ('res_model', '=', 'directdebit.communication'),
+            ('res_id', '=', self.id),
+        ])
+
+        if att:
+            data = att.data
+            import pdb; pdb.set_trace()
 
         if not uri:
             raise Warning(u'Wrong URI defined in bank')
