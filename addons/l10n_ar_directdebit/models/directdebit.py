@@ -465,6 +465,21 @@ class directdebit_communication(models.Model):
     @api.multi
     def pay_invoice(self, inv, amount):
         """
+        Secure payment of invoices
+        """
+        cr = self.env.cr
+        try:
+            self._pay_invoice(inv, amount)
+        except Exception, e:
+            cr.rollback()
+            _logger.error("Invoice %s (id:%i): %s"
+                          % (inv.number, inv.id, str(e)))
+        else:
+            cr.commit()
+
+    @api.multi
+    def _pay_invoice(self, inv, amount):
+        """
         Automatic payment of invoice using account.voucher.
         """
         self.ensure_one()
@@ -523,16 +538,10 @@ class directdebit_communication(models.Model):
         """
         For all open communication try to download and close it.
         """
-        for com in self.search([('state', '=', 'open')]):
-            try:
-                com.do_pool()
-            except Warning, e:
-                com.message_post(
-                    subject=_('Error closing %s.') % com.name,
-                    body='%s.' % str(e),
-                    type='notification',
-                    subtype='mail.mt_comment'
-                )
-        return True
+        _logger.info("Starting close communications.")
+        for com in self.search([('state', '=', 'open'),
+                                ('date_due', '<=',
+                                 datetime.now().strftime(DATE_FORMAT))]):
+            com.do_pool()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

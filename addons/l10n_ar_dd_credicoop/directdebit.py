@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from openerp import fields, api, models, _
+from openerp import api, models, _
 from datetime import datetime
 from openerp.tools import DEFAULT_SERVER_DATE_FORMAT as D_FORMAT
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as DT_FORMAT
@@ -71,6 +71,7 @@ response_code_message = {
     'R91': 'Código de Banco incompatible con moneda',
 }
 
+
 def to_numeric(value):
     return int(value) if value and value.isnumeric() else 0
 
@@ -118,7 +119,6 @@ class directdebit_communication(models.Model):
         if not self.get_type() == 'credicoop':
             return super(directdebit_communication, self).update_context()
 
-
         return {
             'open_date_dm': datetime.strptime(
                 self.open_date, DT_FORMAT).strftime("%d%m"),
@@ -150,6 +150,7 @@ class directdebit_communication(models.Model):
     @api.multi
     def process_response(self, response):
         self.ensure_one()
+
         if not self.get_type() == 'credicoop':
             return super(directdebit_communication, self).process_response(
                 response)
@@ -167,24 +168,34 @@ class directdebit_communication(models.Model):
                 _logger.debug("Line: %s" % line)
 
                 if inv.state != 'open':
-                    _logger.info("Invoice %s (id:%i) is not open."
+                    _logger.debug("Invoice %s (id:%i) is not open."
                                   " Ignoring payment." % (inv.number, inv.id))
                     continue
 
                 if response_code == '':
                     # Pay invoice
                     self.pay_invoice(inv, amount)
-                    inv.message_post(body=_('Paid by Direct Debit'))
-                    _logger.info("Invoice %s (id:%i) is payed."
-                                  % (inv.number, inv.id))
+                    inv.message_post(
+                        subject=_('Invoice is Paid'),
+                        body=_('Invoice has been paid by direct debit.'),
+                        type='notification',
+                        subtype='mail.mt_comment'
+                    )
+                    _logger.info("Invoice %s (id:%i): is Paid."
+                                 % (inv.number, inv.id))
                 else:
                     # Cant pay
                     message = response_code_message.get(
                         response_code,
                         'Not recognized code %s' % response_code)
-                    inv.message_post(body=_('Direct Debit ERROR: %s') % message)
+                    inv.message_post(
+                        subject=_('ERROR in Direct Debit'),
+                        body=_('Direct Debit ERROR: %s') % message,
+                        type='notification',
+                        subtype='mail.mt_comment'
+                    )
                     _logger.info("Invoice %s (id:%i) ERROR: %s."
-                                  % (inv.number, inv.id, message))
+                                 % (inv.number, inv.id, message))
 
         return {}
 
