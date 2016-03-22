@@ -287,11 +287,13 @@ class directdebit_communication(models.Model):
         att = self.env['ir.attachment'].search([
             ('res_model', '=', 'directdebit.communication'),
             ('res_id', '=', self.id),
+            ('name', '=', uri.split('/')[-1]),
         ])
 
         if att:
-            data = att.data
-            import pdb; pdb.set_trace()
+            data = att.datas.decode('base64')
+            self.process_response(data)
+            return True
 
         if not uri:
             raise Warning(u'Wrong URI defined in bank')
