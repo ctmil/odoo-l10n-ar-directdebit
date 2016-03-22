@@ -514,7 +514,7 @@ class directdebit_communication(models.Model):
             try:
                 com.do_pool()
             except Warning, e:
-                self.message_post(
+                com.message_post(
                     subject=_('Error closing %s.') % com.name,
                     body='%s.' % str(e),
                     type='notification',
