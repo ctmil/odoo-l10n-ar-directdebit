@@ -505,7 +505,7 @@ class directdebit_communication(models.Model):
 
         return True
 
-    @api.multi
+    @api.model
     def process(self):
         """
         For all open communication try to download and close it.
