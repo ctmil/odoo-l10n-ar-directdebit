@@ -518,7 +518,7 @@ class directdebit_communication(models.Model):
                     subject=_('Error closing %s.') % com.name,
                     body='%s.' % str(e),
                     type='notification',
-                    subtype='mt_comment'
+                    subtype='mail.mt_comment'
                 )
         return True
 
