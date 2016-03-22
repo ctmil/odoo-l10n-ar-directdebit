@@ -253,7 +253,8 @@ class directdebit_communication(models.Model):
         else:
             ftp.login()
 
-        workdir = path.dirname(o.path)[1:] # Take relative directory
+        # Take relative directory
+        workdir = path.dirname(o.path)[1:]
         filename = path.basename(o.path)
         ftp.cwd(workdir)
 
@@ -290,7 +291,7 @@ class directdebit_communication(models.Model):
         _logger.info('Connecting to FTP server. (%s)' % uri)
 
         suri = uri.split('/')
-        if not '@' in suri[2] and username and password:
+        if '@' not in suri[2] and username and password:
             suri[2] = "%s:%s@%s" % (username, password, suri[2])
             uri = '/'.join(suri)
 
@@ -324,6 +325,7 @@ class directdebit_communication(models.Model):
         """
         Do request.
         """
+        self.ensure_one()
         if self.state != 'draft':
             return False
 
@@ -351,12 +353,16 @@ class directdebit_communication(models.Model):
 
     @api.multi
     def do_pool(self):
+        """
+        Take URI.
+        """
+        self.ensure_one()
         if self.partner_bank_id.directdebit_response_uri:
             o = urlparse(self.partner_bank_id.directdebit_response_uri)
             if o.scheme:
                 retrieve = getattr(self,
-                                  'do_retrieve_by_%s' % o.scheme,
-                                  False)
+                                   'do_retrieve_by_%s' % o.scheme,
+                                   False)
                 if not retrieve:
                     raise Warning('Scheme processor do not implemented.'
                                   ' Check your URI in the account bank'
@@ -453,20 +459,20 @@ class directdebit_communication(models.Model):
         bnk_journal = self.partner_bank_id.journal_id
         voucher = voucher_obj.with_context(
             payment_expected_currency=inv.currency_id.id,
-            default_partner_id=
-            self.env['res.partner']._find_accounting_partner(
-                inv.partner_id).id,
-            default_amount=
-            inv.type in ('out_refund', 'in_refund') and -amount
-            or amount,
+            default_partner_id=(
+                self.env['res.partner']._find_accounting_partner(
+                    inv.partner_id).id),
+            default_amount=(inv.type in ('out_refund', 'in_refund') and -amount
+                            or amount),
             default_reference=inv.name or inv.number,
             close_after_process=True,
             invoice_type=inv.type,
             invoice_id=inv.id,
-            default_type=inv.type in ('out_invoice','out_refund')
-            and 'receipt' or 'payment',
-            type=inv.type in ('out_invoice','out_refund')
-            and 'receipt' or 'payment',
+            default_type=(inv.type in ('out_invoice',
+                                       'out_refund') and 'receipt'
+                          or 'payment'),
+            type=(inv.type in ('out_invoice', 'out_refund') and 'receipt'
+                  or 'payment'),
             default_journal_id=bnk_journal.id,
             default_account_id=
             bnk_journal.default_debit_account_id.id
@@ -482,9 +488,9 @@ class directdebit_communication(models.Model):
         )
         values = update['value']
         values['line_cr_ids'] = [(0, 0, v)
-                                    for v in values['line_cr_ids']]
+                                 for v in values['line_cr_ids']]
         values['line_dr_ids'] = [(0, 0, v)
-                                    for v in values['line_dr_ids']]
+                                 for v in values['line_dr_ids']]
         voucher.write(values)
         voucher.compute_tax()
         voucher.signal_workflow('proforma_voucher')
@@ -497,6 +503,23 @@ class directdebit_communication(models.Model):
             com._validate_bank()
             com._validate_lines()
 
+        return True
+
+    @api.multi
+    def process(self):
+        """
+        For all open communication try to download and close it.
+        """
+        for com in self.search([('state', '=', 'open')]):
+            try:
+                com.do_pool()
+            except Warning, e:
+                self.message_post(
+                    subject=_('Error closing %s.') % com.name,
+                    body='%s.' % str(e),
+                    type='notification',
+                    subtype='mt_comment'
+                )
         return True
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
